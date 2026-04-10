@@ -1,0 +1,16 @@
+# Secretos y configuracion local
+.env
+.env.local
+
+# Archivos subidos
+uploads/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+env/
+
+# Sistema
+.DS_Store
+Thumbs.db
