@@ -47,15 +47,6 @@
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
-        .container {
-            max-width: 600px;
-            margin: 50px auto;
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
-
         h1 {
             color: #333;
             text-align: center;
@@ -64,12 +55,6 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
         }
 
         .upload-area {
@@ -91,7 +76,7 @@
         }
 
         button {
-            background: linear-gradient(135deg, #02140d 0%);
+            background: #02140d;
             color: white;
             border: none;
             padding: 12px 30px;
@@ -103,14 +88,13 @@
         }
 
         button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            background: #ab0cfb;
         }
 
         .result {
             margin-top: 30px;
             padding: 20px;
-            background: #f8f9fa;
+            background: #f0f3b7a1;
             border-radius: 10px;
             display: none;
         }
@@ -118,6 +102,34 @@
         .result.show {
             display: block;
             animation: fadeIn 0.5s;
+        }
+
+        /* Estilos para la vista previa */
+        .preview-box {
+            background: #f0f0ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+            border: 1px solid #a01da0;
+        }
+
+        .preview-box.show {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .preview-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
         }
 
         @keyframes fadeIn {
@@ -158,9 +170,11 @@
 
 <body>
     <div class="container">
-        <h1><img src=" https://i.pinimg.com/736x/64/db/c8/64dbc89008fd8af1fd7c1349aa9549fd.jpg" width="100" height="100"
-                alt="Decoración"> WeTransfer Clone </h1>
-
+        <h1>
+            <img src="https://i.pinimg.com/736x/64/db/c8/64dbc89008fd8af1fd7c1349aa9549fd.jpg" width="100" height="100"
+                alt="Decoración">
+            WeTransfer Clone
+        </h1>
 
         <div class="upload-area" onclick="document.getElementById('fileInput').click()">
             <div>📁</div>
@@ -169,13 +183,130 @@
         </div>
 
         <input type="file" id="fileInput">
-        <button onclick="uploadFile()">Subir archivo</button>
 
+        <!-- Vista previa del archivo seleccionado -->
+        <div id="previewBox" class="preview-box">
+            <div id="previewIcon" class="preview-icon">📄</div>
+            <strong id="previewName"></strong><br>
+            <span id="previewSize"></span><br>
+            <span id="previewType"></span>
+            <div id="previewImage"></div>
+        </div>
+
+        <button onclick="uploadFile()">Subir archivo</button>
         <div class="result" id="result"></div>
     </div>
 
     <script>
+        let selectedFile = null;
 
+        // Función para formatear el tamaño del archivo
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Función para obtener el ícono según el tipo de archivo
+        function getFileIcon(type, name) {
+            if (type.startsWith('image/')) return;
+            if (type.startsWith('video/')) return;
+            if (type.startsWith('audio/')) return;
+            if (type.includes('pdf')) return;
+            if (type.includes('word') || name.includes('.doc')) return;
+            if (type.includes('excel') || name.includes('.xls')) return;
+            if (type.includes('zip') || type.includes('rar')) return;
+            return '📄';
+        }
+
+        // Escuchar cuando se selecciona un archivo
+        document.getElementById('fileInput').addEventListener('change', function (e) {
+            selectedFile = e.target.files[0];
+
+            if (selectedFile) {
+                const previewBox = document.getElementById('previewBox');
+                const previewName = document.getElementById('previewName');
+                const previewSize = document.getElementById('previewSize');
+                const previewType = document.getElementById('previewType');
+                const previewIcon = document.getElementById('previewIcon');
+                const previewImageDiv = document.getElementById('previewImage');
+
+                // Mostrar información del archivo
+                previewName.textContent = selectedFile.name;
+                previewSize.textContent = formatFileSize(selectedFile.size);
+                previewType.textContent = selectedFile.type || 'Tipo desconocido';
+                previewIcon.textContent = getFileIcon(selectedFile.type, selectedFile.name);
+
+                // Limpiar vista previa de imagen anterior
+                previewImageDiv.innerHTML = '';
+
+                // Si es imagen, mostrar vista previa
+                if (selectedFile.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'preview-image';
+                        previewImageDiv.appendChild(img);
+                    };
+                    reader.readAsDataURL(selectedFile);
+                }
+
+                // Mostrar la caja de vista previa
+                previewBox.classList.add('show');
+            } else {
+                document.getElementById('previewBox').classList.remove('show');
+            }
+        });
+
+        // Función para subir el archivo
+        async function uploadFile() {
+            if (!selectedFile) {
+                alert('📁 Por favor, selecciona un archivo primero');
+                return;
+            }
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div style="text-align:center">⏳ Subiendo archivo...</div>';
+            resultDiv.classList.add('show');
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('expires_in', 24);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">✅ ¡Archivo subido exitosamente!</div>
+                        <div><strong>Token:</strong> <code>${data.token}</code></div>
+                        <div><strong>Enlace de descarga:</strong></div>
+                        <div class="link">
+                            <a href="${data.download_url}" target="_blank">${data.download_url}</a>
+                        </div>
+                        <div><strong>Expira:</strong> ${new Date(data.expires_at).toLocaleString()}</div>
+                      
+                    `;
+
+                    // Limpiar después de subir
+                    document.getElementById('fileInput').value = '';
+                    document.getElementById('previewBox').classList.remove('show');
+                    selectedFile = null;
+                } else {
+                    resultDiv.innerHTML = `<div class="error">❌ Error: ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error de conexión: ${error.message}</div>`;
+            }
+        }
     </script>
 </body>
 
