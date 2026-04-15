@@ -15,11 +15,25 @@ class SupabaseManager:
             try:
                 self.client: Client = create_client(self.url, self.key)
                 print("✅ Supabase conectado")
+                # Verificar que el bucket existe
+                self._check_bucket()
             except Exception as e:
                 print(f"⚠️ Error conectando a Supabase: {e}")
                 self.client = None
         else:
             print("⚠️ Supabase no configurado - funcionando solo con PostgreSQL")
+    
+    def _check_bucket(self):
+        """Verificar que el bucket 'files' existe"""
+        try:
+            buckets = self.client.storage.list_buckets()
+            bucket_names = [b.name for b in buckets]
+            if 'files' in bucket_names:
+                print("✅ Bucket 'files' encontrado")
+            else:
+                print("⚠️ Bucket 'files' no existe - créalo en el dashboard")
+        except Exception as e:
+            print(f"⚠️ Error verificando bucket: {e}")
     
     def backup_metadata(self, file_data):
         """Respaldar metadata en Supabase"""
@@ -67,18 +81,38 @@ class SupabaseManager:
     def upload_to_storage(self, file_path, token):
         """Subir archivo a Supabase Storage"""
         if not self.client:
-            return True
+            print("⚠️ No hay cliente de Supabase")
+            return False
             
         try:
+            # Verificar que el archivo existe
+            if not os.path.exists(file_path):
+                print(f"❌ El archivo no existe: {file_path}")
+                return False
+            
+            file_size = os.path.getsize(file_path)
+            file_name = os.path.basename(file_path)
+            storage_path = f"{token}/{file_name}"
+            
+            print(f"📤 Subiendo a Storage: {storage_path} ({file_size} bytes)")
+            
             with open(file_path, 'rb') as f:
-                self.client.storage.from_('files').upload(
-                    f'{token}/{os.path.basename(file_path)}',
-                    f
+                result = self.client.storage.from_('files').upload(
+                    storage_path,
+                    f,
+                    {"content-type": "application/octet-stream"}
                 )
-            print(f"☁️ Archivo respaldado en Storage")
+            
+            print(f"☁️ Archivo subido exitosamente a Storage")
+            print(f"   Ruta: {storage_path}")
             return True
+            
         except Exception as e:
-            print(f"⚠️ Error en storage: {e}")
+            print(f"❌ Error detallado en storage:")
+            print(f"   Tipo: {type(e).__name__}")
+            print(f"   Mensaje: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
 supabase_mgr = SupabaseManager()

@@ -1,9 +1,9 @@
-from flask import Flask, request, send_file, jsonify, abort, render_template
+from flask import Flask, request, send_file, jsonify, abort, render_template, redirect
 from flask_cors import CORS
 import os
 import uuid
 import hashlib
-import filetype  # Cambiado de magic a filetype
+import filetype
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from database import get_db_connection
@@ -22,7 +22,8 @@ MAX_FILE_SIZE = int(os.getenv('MAX_FILE_SIZE', 104857600))
 ALLOWED_MIME_TYPES = [
     'image/jpeg', 'image/png', 'application/pdf',
     'text/plain', 'application/zip', 'video/mp4',
-    'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/octet-stream'
 ]
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -60,6 +61,20 @@ def validate_file(file):
         raise ValueError("Nombre de archivo inválido")
     
     return mime_type
+
+def get_supabase_public_url(token, original_name):
+    """Genera la URL pública de Supabase para un archivo"""
+    import urllib.parse
+    supabase_url = os.getenv('SUPABASE_URL', '')
+    
+    # Codificar el nombre original por si tiene espacios
+    clean_name = urllib.parse.quote(original_name)
+    
+    # IMPORTANTE: El archivo se guarda como {token}_{nombre}
+    file_name = f"{token}_{clean_name}"
+    
+    # Generar URL completa (carpeta token + archivo con token_nombre)
+    return f"{supabase_url}/storage/v1/object/public/files/{token}/{file_name}"
 
 # ========== ENDPOINTS ==========
 
@@ -111,6 +126,9 @@ def upload_file():
             'expires_at': expires_at.isoformat()
         })
         
+        # Subir archivo a Supabase Storage
+        supabase_mgr.upload_to_storage(save_path, token)
+        
         # Registrar log en Supabase
         supabase_mgr.log_activity(
             'UPLOAD', 
@@ -122,8 +140,8 @@ def upload_file():
         cur.close()
         conn.close()
         
-        # Generar enlace de descarga
-        download_url = f"http://localhost:5000/download/{token}"
+        # Generar enlace de descarga desde Supabase (público)
+        download_url = get_supabase_public_url(token, original_name)
         
         return jsonify({
             'message': 'File uploaded successfully',
@@ -139,14 +157,14 @@ def upload_file():
 
 @app.route('/download/<token>', methods=['GET'])
 def download_file(token):
-    """GET /download/{token} - Descargar archivo"""
+    """GET /download/{token} - Redirigir a la descarga desde Supabase"""
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         
         # Buscar archivo en PostgreSQL
         cur.execute('''
-            SELECT * FROM files 
+            SELECT original_name, token FROM files 
             WHERE token = %s AND is_active = TRUE AND expires_at > NOW()
         ''', (token,))
         
@@ -174,13 +192,12 @@ def download_file(token):
         cur.close()
         conn.close()
         
-        # Enviar archivo
-        return send_file(
-            file_record['storage_path'],
-            as_attachment=True,
-            download_name=file_record['original_name'],
-            mimetype=file_record['mime_type']
-        )
+        # Redirigir a la URL pública de Supabase
+        supabase_url = os.getenv('SUPABASE_URL')
+        file_path = f"{token}/{file_record['original_name']}"
+        supabase_file_url = f"{supabase_url}/storage/v1/object/public/files/{file_path}"
+        
+        return redirect(supabase_file_url, code=302)
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -231,7 +248,7 @@ def delete_file(token):
         result = cur.fetchone()
         
         if result:
-            # Eliminar archivo físico
+            # Eliminar archivo físico local
             try:
                 os.remove(result['storage_path'])
             except:
