@@ -1,5 +1,0 @@
-<!doctype html>
-<html lang=en>
-<title>Redirecting...</title>
-<h1>Redirecting...</h1>
-<p>You should be redirected automatically to the target URL: <a href="https://rlwpxfeulqdyjqnsvztj.supabase.co/storage/v1/object/public/files/2013d51e86364b33839a861f33adfa941cf322dac653e93c/prueba.txt">https://rlwpxfeulqdyjqnsvztj.supabase.co/storage/v1/object/public/files/2013d51e86364b33839a861f33adfa941cf322dac653e93c/prueba.txt</a>. If not, click the link.
