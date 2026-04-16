@@ -87,13 +87,16 @@ Endpoints mínimos:
 - Límite de tamaño por request
 - Manejo de errores controlado
 
-
+---
 ## Para la base de datos se instalo PostgreSQL
-![alt text](<Captura de pantalla 2026-04-11 154408.png>)
 
 ![alt text](<Captura de pantalla 2026-04-08 234530.png>)
 
+![alt text](<Captura de pantalla 2026-04-11 154408.png>)
+
 ![alt text](<Captura de pantalla 2026-04-13 103506.png>)
+
+---
 
 ## En supabase tambien realizamos la base de datos para la copia de seguridad
 
@@ -102,6 +105,16 @@ Endpoints mínimos:
 ![alt text](<Captura de pantalla 2026-04-13 103633.png>)
 
 ![alt text](<Captura de pantalla 2026-04-13 103652.png>)
+
+---
+
+# Bucket
+
+### Permite que los archivos subidos dejen de ser local y esten en la nube. En nuestra carpeta files se subiran los archivos con su respectivo token.
+
+![alt text](<Captura de pantalla 2026-04-15 140340.png>)
+![alt text](<Captura de pantalla 2026-04-15 140411.png>)
+
 
 ## Page
 
